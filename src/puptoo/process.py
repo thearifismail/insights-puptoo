@@ -17,6 +17,7 @@ from insights.parsers.installed_product_ids import InstalledProductIDs
 from insights.parsers.installed_rpms import InstalledRpms
 from insights.parsers.ip import IpAddr
 from insights.parsers.lsmod import LsMod
+from insights.parsers.lscpu import LsCPU
 from insights.parsers.meminfo import MemInfo
 from insights.parsers.ps import PsAuxcww
 from insights.parsers.systemd.unitfiles import UnitFiles
@@ -50,6 +51,7 @@ def get_archive(url):
         RedHatRelease,
         Uname,
         LsMod,
+        LsCPU,
         InstalledRpms,
         UnitFiles,
         PsAuxcww,
@@ -75,6 +77,7 @@ def system_profile(
     redhat_release,
     uname,
     lsmod,
+    lscpu,
     installed_rpms,
     unit_files,
     ps_auxcww,
@@ -112,8 +115,9 @@ def system_profile(
         profile["cpu_flags"] = cpu_info.flags
         profile["number_of_cpus"] = cpu_info.cpu_count
         profile["number_of_sockets"] = cpu_info.socket_count
-        if cpu_info.core_total and cpu_info.socket_count:
-            profile["cores_per_socket"] = cpu_info.core_total // cpu_info.socket_count
+
+    if lscpu:
+        profile["cores_per_socket"] = lscpu.info['Cores per socket']
 
     if unit_files:
         profile["enabled_services"] = _enabled_services(unit_files)
@@ -331,8 +335,8 @@ def extraction(msg, extra, remove=True):
                 facts = get_canonical_facts(path=ex.tmp_dir)
                 facts["system_profile"] = get_system_profile(path=ex.tmp_dir)
     except Exception as e:
-        logger.exception("Failed to extract facts: %s", e, extra=extra)
-        facts["error"] = e
+        logger.exception("Failed to extract facts: %s", str(e), extra=extra)
+        facts["error"] = str(e)
     finally:
         if facts["system_profile"].get("display_name"):
             facts["display_name"] = facts["system_profile"].get("display_name")
