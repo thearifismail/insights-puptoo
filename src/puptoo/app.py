@@ -128,7 +128,7 @@ def delivery_report(err, msg=None, extra=None):
             err,
             extra["request_id"],
         )
-        metrics.msg_send_failure.inc()
+        metrics.msg_send_failure.labels(msg.topic()).inc()
     else:
         logger.info(
             "Message delivered to %s [%s] for request_id [%s]",
@@ -136,7 +136,7 @@ def delivery_report(err, msg=None, extra=None):
             msg.partition(),
             extra["request_id"],
         )
-        metrics.msg_produced.inc()
+        metrics.msg_produced.labels(msg.topic()).inc()
 
 
 @metrics.send_time.time()
@@ -166,10 +166,10 @@ def handle_message(msg):
     metrics.msg_count.inc()
 
     facts = process_archive(msg, extra)
-    facts["stale_timestamp"] = get_staletime()
-    facts["reporter"] = "puptoo"
 
     if facts:
+        facts["stale_timestamp"] = get_staletime()
+        facts["reporter"] = "puptoo"
         send_message(
             config.INVENTORY_TOPIC, msgs.inv_message("add_host", facts, msg), extra
         )
