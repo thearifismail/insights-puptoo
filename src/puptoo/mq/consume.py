@@ -14,5 +14,5 @@ def init_consumer():
         }
     )
 
-    consumer.subscribe([config.CONSUME_TOPIC])
+    consumer.subscribe([config.ADVISOR_TOPIC, config.COMPLIANCE_TOPIC])
     return consumer
