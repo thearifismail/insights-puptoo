@@ -124,7 +124,8 @@ def system_profile(
 
     if sap:
         profile["sap_system"] = True
-        profile["sap_local_instances"] = sap.local_instances
+        sids = {sap.sid(instance) for instance in sap.local_instances}
+        profile["sap_sids"] = sorted(list(sids))
 
     if unit_files:
         profile["enabled_services"] = _enabled_services(unit_files)
@@ -274,8 +275,11 @@ def format_tags(tags):
             namespace = "insights-client"
         if tags_dict.get(namespace) is None:
             tags_dict[namespace] = {}
-        tags_dict[namespace][entry["key"]] = []
-        tags_dict[namespace][entry["key"]].append(entry["value"])
+        if tags_dict[namespace].get(entry["key"]):
+            tags_dict[namespace][entry["key"]].append(entry["value"])
+        else:
+            tags_dict[namespace][entry["key"]] = []
+            tags_dict[namespace][entry["key"]].append(entry["value"])
 
     return tags_dict
 
@@ -382,4 +386,5 @@ def extraction(msg, extra, remove=True):
         if facts["system_profile"].get("tags"):
             facts["tags"] = facts["system_profile"].pop("tags")
         groomed_facts = _remove_empties(_remove_bad_display_name(facts))
+        metrics.msg_processed.inc()
         return groomed_facts
